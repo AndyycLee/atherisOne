@@ -1,0 +1,4 @@
+atheris
+# Add other packages you want to fuzz here, e.g.:
+# pydantic
+# python-dateutil

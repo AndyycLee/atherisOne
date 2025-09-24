@@ -1,0 +1,122 @@
+I still need to do:
+
+- Corpus?
+- Better type inference (guess from defaults, mypy, etc.)
+- Better error handling (catch common exceptions and ignore them, like ValueError, etc.)
+
+- I think I have slicing done tho? it fuzzes one callable at a time that we pass into make run
+
+
+so steps:
+Install target packages: If the function you want to fuzz belongs to a third-party package (e.g., pydantic, python-dateutil), add that package to requirements.txt before make build
+
+1. make build
+
+Generate a harness for the function you want to fuzz. From project root:
+
+Example: stdlib IP parser
+2. make gen TARGET=ipaddress:ip_address
+or like make gen TARGET=urllib.parse:urlparse
+
+make gen TARGET=example_local_function_fuzz_gen:divide
+
+3. make run
+
+
+
+Future notes:
+In make_harness.py, inside TestOneInput, you have:
+
+sig = inspect.signature(_target)
+hints = get_type_hints(_target)
+
+For each parameter:
+
+If there’s a type annotation (like a: int), it passes that hint to gen_by_type_hint, which tries to generate the right kind of value (an int, a str, a list[str], etc.).
+
+If there’s no annotation (inspect._empty), it falls back to a default (in your fuzz_helpers.py, the fallback is gen_str, so you’ll get a random string).
+
+so divide (example_local_function_fuzz_gen), which has two int parameters, will get two random integers, but if it has no typing it just gets stringErrors which is not useful
+
+Options to improve type inference:
+Guess types from defaults, mypy, other stuff im going to bed
+
+
+
+make run
+docker run --rm -v /mnt/d/atherisOne:/app atheris-fuzz:latest
+INFO: Instrumenting 2197 functions...
+INFO: Instrumentation complete.
+INFO: Using built-in libfuzzer
+WARNING: Failed to find function "__sanitizer_acquire_crash_state".
+WARNING: Failed to find function "__sanitizer_print_stack_trace".
+WARNING: Failed to find function "__sanitizer_set_death_callback".
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 414262910
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: A corpus is not provided, starting from an empty corpus
+#2      INITED cov: 99 ft: 99 corp: 1/1b exec/s: 0 rss: 37Mb
+#65536  pulse  cov: 99 ft: 99 corp: 1/1b lim: 652 exec/s: 21845 rss: 37Mb
+
+ === Uncaught Python exception: ===
+ZeroDivisionError: division by zero
+Traceback (most recent call last):
+  File "/app/main_fuzzer.py", line 79, in TestOneInput
+    try:
+  File "/app/example_local_function_fuzz_gen.py", line 2, in divide
+    def divide(a: int, b: int) -> float:
+ZeroDivisionError: division by zero
+
+Exception ignored in: <function _removeHandlerRef at 0x75b18ae6b910>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/logging/__init__.py", line 836, in _removeHandlerRef
+TypeError: 'NoneType' object is not callable
+==1== ERROR: libFuzzer: fuzz target exited
+SUMMARY: libFuzzer: fuzz target exited
+MS: 4 CMP-InsertRepeatedBytes-InsertByte-CMP- DE: "\001\000"-"\002\000\000\000\000\000\000\000"-; base unit: adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+0x1,0x0,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x3b,0x80,0x80,0x80,0x80,0x2,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x80,0x80,0x80,0x80,0xa,
+\001\000\200\200\200\200\200\200\200;\200\200\200\200\002\000\000\000\000\000\000\000\200\200\200\200\012
+artifact_prefix='./'; Test unit written to ./crash-6171e1ccfc91cb88a9a15c363f2d74c4b15b2f40
+Base64: AQCAgICAgICAO4CAgIACAAAAAAAAAICAgIAK
+make: *** [Makefile:17: run] Error 77
+
+
+
+
+
+
+
+
+
+
+
+
+$ make gen TARGET=urllib.parse:urlparse
+
+
+ === Uncaught Python exception: ===
+ValueError: Invalid IPv6 URL
+Traceback (most recent call last):
+  File "/app/main_fuzzer.py", line 80, in TestOneInput
+    try:
+  File "/usr/local/lib/python3.10/urllib/parse.py", line 381, in urlparse
+    """Parse a URL into 6 components:
+  File "/usr/local/lib/python3.10/urllib/parse.py", line 502, in urlsplit
+    scheme = scheme.replace(b, "")
+ValueError: Invalid IPv6 URL
+
+Exception ignored in: <function _removeHandlerRef at 0x74c95f0679a0>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/logging/__init__.py", line 836, in _removeHandlerRef
+TypeError: 'NoneType' object is not callable
+==1== ERROR: libFuzzer: fuzz target exited
+SUMMARY: libFuzzer: fuzz target exited
+MS: 2 CopyPart-InsertByte-; base unit: 13fabb455e979b1dcfb4bd56c17941464f795114
+0x2f,0x2f,0x7e,0x5b,0xcf,0x2f,
+//~[\317/
+artifact_prefix='./'; Test unit written to ./crash-238cc1132cff8f2917297d0427d3ebf14feed9e1
+Base64: Ly9+W88v
+make: *** [Makefile:17: run] Error 77
+
+
+
