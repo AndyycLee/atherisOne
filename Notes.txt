@@ -120,3 +120,8 @@ make: *** [Makefile:17: run] Error 77
 
 
 
+The default python:3.10-slim (or system python) is compiled without sanitizers.
+
+Sanitizers like ASan (AddressSanitizer) and UBSan (Undefined Behavior Sanitizer) only work if the binary is compiled with special flags (-fsanitize=...).
+
+To fuzz safely, you need memory errors to crash immediately instead of silently corrupting state. That’s why I compile CPython from source with clang + sanitizer flags.

@@ -184,3 +184,12 @@ replace `./crash-dd` with the actual crash file name. After building the harness
 ├── example_local_function_fuzz_gen.py
 └── main_fuzzer.py   (auto-generated)
 ```
+
+## Known Warnings
+
+WARNING: Failed to find function "__sanitizer_acquire_crash_state".
+WARNING: Failed to find function "__sanitizer_print_stack_trace".
+WARNING: Failed to find function "__sanitizer_set_death_callback"
+
+These happen because Python build doesn’t have sanitizer symbols. as Python binary running inside the Docker container is a regular CPython build, not compiled with -fsanitize=address or -fsanitize=fuzzer
+I could just ignore them as its not doing anything (its just a warning and im only using python) or Change Dockerfile to build Python with sanitizers
