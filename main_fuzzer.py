@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Auto-generated harness for urllib.parse:urlparse
+# Auto-generated harness for example_local_function_fuzz_gen:divide
 import sys, os
 sys.path.append(os.path.dirname(__file__))
 
@@ -11,7 +11,7 @@ from fuzz_helpers import gen_by_type_hint
 
 # Import top-level symbol and resolve nested attributes at runtime
 try:
-    from urllib.parse import urlparse as _top_sym
+    from example_local_function_fuzz_gen import divide as _top_sym
 except Exception as e:
     # import might fail on host; will work when the container has packages installed
     _top_sym = None
@@ -33,8 +33,8 @@ def TestOneInput(data: bytes):
     global _target
     if _target is None:
         try:
-            module = __import__("urllib.parse", fromlist=["*"])
-            _temp = getattr(module, "urlparse")
+            module = __import__("example_local_function_fuzz_gen", fromlist=["*"])
+            _temp = getattr(module, "divide")
             rest = "".lstrip(".")
             if rest:
                 for part in rest.split("."):
@@ -76,10 +76,11 @@ def TestOneInput(data: bytes):
         else:
             kwargs[pname] = val
 
-    print("DEBUG ARGS:", args, kwargs, flush=True)
     try:
         _target(*args, **kwargs)
     except Exception:
+        # Print debug info only when there's an actual crash
+        print("DEBUG ARGS (crash):", args, kwargs, flush=True)
         # re-raise unexpected exceptions so Atheris records them
         raise
 

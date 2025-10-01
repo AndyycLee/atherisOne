@@ -114,10 +114,11 @@ def TestOneInput(data: bytes):
         else:
             kwargs[pname] = val
 
-    print("DEBUG ARGS:", args, kwargs, flush=True)
     try:
         _target(*args, **kwargs)
     except Exception:
+        # Print debug info only when there's an actual crash
+        print("DEBUG ARGS (crash):", args, kwargs, flush=True)
         # re-raise unexpected exceptions so Atheris records them
         raise
 
@@ -132,6 +133,6 @@ if __name__ == "__main__":
 with open(out, "w") as f:
     f.write(textwrap.dedent(template))
 
-print(f"Wrote harness to {out}. Run it under Atheris (no corpus for now):")
-print("  python3 -m atheris", out)
-print("Or build Docker and run: make build && make run")
+print(f"Wrote harness to {out}. Run it w/ Atheris (no corpus for now):")
+print("python3 -m atheris", out)
+print("Or build Docker and run: make run")
