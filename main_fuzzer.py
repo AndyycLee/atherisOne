@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # Auto-generated harness for example_local_function_fuzz_gen:divide
-import sys, os
+import sys, os, logging
+
+logging.shutdown = lambda: None # diables: The TypeError: 'NoneType' object is not callable on interpreter exit from Python logging teardown
+
 sys.path.append(os.path.dirname(__file__))
 
 import atheris, inspect

@@ -38,7 +38,10 @@ top_name = callable_path.split(".")[0]
 
 template = f'''#!/usr/bin/env python3
 # Auto-generated harness for {module_name}:{callable_path}
-import sys, os
+import sys, os, logging
+
+logging.shutdown = lambda: None # diables: The TypeError: 'NoneType' object is not callable on interpreter exit from Python logging teardown
+
 sys.path.append(os.path.dirname(__file__))
 
 import atheris, inspect
