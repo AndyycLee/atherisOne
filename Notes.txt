@@ -16,9 +16,11 @@ Generate a harness for the function you want to fuzz. From project root:
 
 Example: stdlib IP parser
 2. make gen TARGET=ipaddress:ip_address
-or like make gen TARGET=urllib.parse:urlparse
+or like make gen TARGET=urllib.parse:urlparse   - https://github.com/python/cpython/blob/3.13/Lib/urllib/parse.py
 
 make gen TARGET=example_local_function_fuzz_gen:divide
+make gen TARGET=requests:get
+https://github.com/psf/requests/blob/main/src/requests/api.py
 
 3. make run
 
@@ -125,3 +127,9 @@ The default python:3.10-slim (or system python) is compiled without sanitizers.
 Sanitizers like ASan (AddressSanitizer) and UBSan (Undefined Behavior Sanitizer) only work if the binary is compiled with special flags (-fsanitize=...).
 
 To fuzz safely, you need memory errors to crash immediately instead of silently corrupting state. That’s why I compile CPython from source with clang + sanitizer flags.
+
+
+Pick larger scale python projects with lots of imports see if it fails
+
+i have imports analyzed in reqs.txt but ideally it would work outside of that?
+its not hard if the import is at the top but its best if i can analyze the cache of imports and start from there
