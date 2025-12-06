@@ -1,71 +1,50 @@
 #!/usr/bin/env python3
-# Auto-generated harness for example_local_function_fuzz_gen:divide
-import sys, os, logging
-
-logging.shutdown = lambda: None # diables: The TypeError: 'NoneType' object is not callable on interpreter exit from Python logging teardown
-
-sys.path.append(os.path.dirname(__file__))
-
-import atheris, inspect
+# Auto-generated harness for httpx._content:encode_content
+import sys, os, inspect, atheris
 from typing import get_type_hints
-
-# helper generator
 from fuzz_helpers import gen_by_type_hint
 
-# Import top-level symbol and resolve nested attributes at runtime
+DEBUG_TRACE = os.environ.get("FUZZ_DEBUG", "0") == "1"
+
+def debug_print(*args, **kwargs):
+    if DEBUG_TRACE:
+        print("[TRACE]", *args, **kwargs, flush=True)
+
+# === Target import (instrument imports so coverage includes the target and its deps) ===
+debug_print("=== INITIALIZING HARNESS ===")
 try:
-    from example_local_function_fuzz_gen import divide as _top_sym
+    with atheris.instrument_imports():
+        module = __import__("httpx._content", fromlist=["*"])
+        target = module
+        for part in "encode_content".split("."):
+            target = getattr(target, part)
+    debug_print(f"Target resolved successfully: {target}")
 except Exception as e:
-    # import might fail on host; will work when the container has packages installed
-    _top_sym = None
+    print(f"Failed to import target httpx._content:encode_content - {e}", flush=True)
+    sys.exit(3)
 
-_target = _top_sym
-_rest = "".lstrip(".")
-
-if _top_sym is not None and _rest:
-    try:
-        for part in _rest.split("."):
-            _target = getattr(_target, part)
-    except Exception:
-        pass
-
+# === Fuzz entrypoint ===
 def TestOneInput(data: bytes):
     fdp = atheris.FuzzedDataProvider(data)
-
-    # if _target wasn't importable at generation time, try to import/rescue now
-    global _target
-    if _target is None:
-        try:
-            module = __import__("example_local_function_fuzz_gen", fromlist=["*"])
-            _temp = getattr(module, "divide")
-            rest = "".lstrip(".")
-            if rest:
-                for part in rest.split("."):
-                    _temp = getattr(_temp, part)
-            _target = _temp
-        except Exception:
-            # cannot resolve target; consume bytes and return
-            _ = fdp.ConsumeRemainingBytes()
-            return
+    debug_print("TestOneInput called")
 
     try:
-        sig = inspect.signature(_target)
-        hints = get_type_hints(_target)
+        sig = inspect.signature(target)
+        hints = get_type_hints(target)
     except Exception:
-        sig = None
-        hints = {}
+        sig, hints = None, {}
 
-    args = []
-    kwargs = {}
-
-    if sig is None or len(sig.parameters) == 0:
-        # call with raw bytes if no params
+    # No parameters → call with raw bytes
+    if not sig or not sig.parameters:
         try:
-            _target(fdp.ConsumeRemainingBytes())
-        except Exception:
+            target(data)
+        except Exception as e:
+            print(f"Crash: {type(e).__name__} - {e}", flush=True)
             raise
         return
 
+    # Generate args
+    args, kwargs = [], {}
     for pname, p in sig.parameters.items():
         if p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
             continue
@@ -80,11 +59,14 @@ def TestOneInput(data: bytes):
             kwargs[pname] = val
 
     try:
-        _target(*args, **kwargs)
-    except Exception:
-        # Print debug info only when there's an actual crash
-        print("DEBUG ARGS (crash):", args, kwargs, flush=True)
-        # re-raise unexpected exceptions so Atheris records them
+        target(*args, **kwargs)
+    except Exception as e:
+        print("\n=== CRASH DETECTED ===", flush=True)
+        print(f"Target: httpx._content:encode_content", flush=True)
+        print(f"Args: {args}", flush=True)
+        print(f"Kwargs: {kwargs}", flush=True)
+        print(f"Exception: {type(e).__name__}: {e}", flush=True)
+        print("======================\n", flush=True)
         raise
 
 def main():

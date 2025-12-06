@@ -17,93 +17,64 @@ if len(sys.argv) < 2:
 
 target = sys.argv[1]
 out = "main_fuzzer.py"
-# optional --out=filename
 for a in sys.argv[2:]:
     if a.startswith("--out="):
-        out = a.split("=",1)[1]
+        out = a.split("=", 1)[1]
 
 if ":" not in target:
     print("Target must be module:callable")
     sys.exit(2)
 
 module_name, callable_path = target.split(":", 1)
-
-# Attempt to import module to give early feedback (not strictly required)
-try:
-    importlib.import_module(module_name)
-except Exception as e:
-    print(f"Warning: unable to import module {module_name} in generator (it may be fine inside Docker): {e}")
-
 top_name = callable_path.split(".")[0]
 
 template = f'''#!/usr/bin/env python3
 # Auto-generated harness for {module_name}:{callable_path}
-import sys, os, logging
-
-logging.shutdown = lambda: None # diables: The TypeError: 'NoneType' object is not callable on interpreter exit from Python logging teardown
-
-sys.path.append(os.path.dirname(__file__))
-
-import atheris, inspect
+import sys, os, inspect, atheris
 from typing import get_type_hints
-
-# helper generator
 from fuzz_helpers import gen_by_type_hint
 
-# Import top-level symbol and resolve nested attributes at runtime
+DEBUG_TRACE = os.environ.get("FUZZ_DEBUG", "0") == "1"
+
+def debug_print(*args, **kwargs):
+    if DEBUG_TRACE:
+        print("[TRACE]", *args, **kwargs, flush=True)
+
+# === Target import (instrument imports so coverage includes the target and its deps) ===
+debug_print("=== INITIALIZING HARNESS ===")
 try:
-    from {module_name} import {top_name} as _top_sym
+    with atheris.instrument_imports():
+        module = __import__("{module_name}", fromlist=["*"])
+        target = module
+        for part in "{callable_path}".split("."):
+            target = getattr(target, part)
+    debug_print(f"Target resolved successfully: {{target}}")
 except Exception as e:
-    # import might fail on host; will work when the container has packages installed
-    _top_sym = None
+    print(f"Failed to import target {module_name}:{callable_path} - {{e}}", flush=True)
+    sys.exit(3)
 
-_target = _top_sym
-_rest = "{callable_path[len(top_name):]}".lstrip(".")
-
-if _top_sym is not None and _rest:
-    try:
-        for part in _rest.split("."):
-            _target = getattr(_target, part)
-    except Exception:
-        pass
-
+# === Fuzz entrypoint ===
 def TestOneInput(data: bytes):
     fdp = atheris.FuzzedDataProvider(data)
-
-    # if _target wasn't importable at generation time, try to import/rescue now
-    global _target
-    if _target is None:
-        try:
-            module = __import__("{module_name}", fromlist=["*"])
-            _temp = getattr(module, "{top_name}")
-            rest = "{callable_path[len(top_name):]}".lstrip(".")
-            if rest:
-                for part in rest.split("."):
-                    _temp = getattr(_temp, part)
-            _target = _temp
-        except Exception:
-            # cannot resolve target; consume bytes and return
-            _ = fdp.ConsumeRemainingBytes()
-            return
+    debug_print("TestOneInput called")
 
     try:
-        sig = inspect.signature(_target)
-        hints = get_type_hints(_target)
+        sig = inspect.signature(target)
+        hints = get_type_hints(target)
     except Exception:
-        sig = None
-        hints = {{}}
+        sig, hints = None, {{}}
 
-    args = []
-    kwargs = {{}}
-
-    if sig is None or len(sig.parameters) == 0:
-        # call with raw bytes if no params
+    # No parameters → call with raw bytes
+    if not sig or not sig.parameters:
         try:
-            _target(fdp.ConsumeRemainingBytes())
-        except Exception:
+            target(data)
+        except Exception as e:
+            print(f"Crash: {{type(e).__name__}} - {{e}}", flush=True)
             raise
         return
 
+    # Generate args
+    args, kwargs = [], {{}}
     for pname, p in sig.parameters.items():
         if p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
             continue
@@ -118,11 +89,14 @@ def TestOneInput(data: bytes):
             kwargs[pname] = val
 
     try:
-        _target(*args, **kwargs)
-    except Exception:
-        # Print debug info only when there's an actual crash
-        print("DEBUG ARGS (crash):", args, kwargs, flush=True)
-        # re-raise unexpected exceptions so Atheris records them
+        target(*args, **kwargs)
+    except Exception as e:
+        print("\\n=== CRASH DETECTED ===", flush=True)
+        print(f"Target: {module_name}:{callable_path}", flush=True)
+        print(f"Args: {{args}}", flush=True)
+        print(f"Kwargs: {{kwargs}}", flush=True)
+        print(f"Exception: {{type(e).__name__}}: {{e}}", flush=True)
+        print("======================\\n", flush=True)
         raise
 
 def main():
@@ -133,9 +107,9 @@ def main():
 if __name__ == "__main__":
     main()
 '''
+
 with open(out, "w") as f:
     f.write(textwrap.dedent(template))
 
-print(f"Wrote harness to {out}. Run it w/ Atheris (no corpus for now):")
-print("python3 -m atheris", out)
-print("Or build Docker and run: make run")
+print(f"Wrote harness to {out}")
+print(f"Run with: python3 -m atheris {out}")

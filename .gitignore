@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+.fuzzenv/
+
+# Type/checker caches
+.pytype/
+.mypy_cache/
+.pytest_cache/
+.pyre/
+.pyre_configuration.local
+
+# Tooling logs and outputs
+bulk_logs/
+*.log
+
+# Fuzzer artifacts
+crash-*
+
+# Local data
+monkeytype.sqlite3
+work/
+
+# Editors/IDEs
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Generated (uncomment if you don't want to commit harnesses)
+# main_fuzzer.py

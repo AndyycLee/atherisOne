@@ -1,3 +1,39 @@
+Updated steps ex:
+# 1. Build the Docker image
+make build
+
+# 2. Clone a repository into standardized location
+make clone-src REPO_URL=https://github.com/psf/requests.git NAME=requests
+
+# 3. (Optional) Add type annotations with pyrefly
+make type-src SRC=work/src/requests
+
+# 4. Fuzz a specific target from the repo
+make fuzz-src SRC=work/src/requests TARGET=requests.api:get TIME=60
+
+# 5. (Optional) Inspect the target's signature/types
+make show-types-src SRC=work/src/requests TARGET=requests.api:get
+
+# 6. (Optional) Update the repo later
+make update-src NAME=requests
+
+
+Already typed repos: 
+https://github.com/encode/httpx/blob/master/httpx/_content.py#L107
+
+Something I think works (but for some reason doesnt go to the exception):
+make fuzz-src SRC=work/src/httpx TARGET=httpx._content:encode_content TIME=20
+make fuzz-src SRC=work/src/httpx TARGET=httpx._content:encode_json TIME=20
+
+make fuzz-src SRC=work/src/httpx TARGET=httpx._content:encode_urlencoded_data TIME=20
+make fuzz-src SRC=work/src/httpx TARGET=httpx._content:encode_multipart_data TIME=20
+make fuzz-src SRC=work/src/httpx TARGET=httpx._urlparse:urlparse TIME=20
+make fuzz-src SRC=work/src/httpx TARGET=httpx._urls:URL TIME=20 
+
+make fuzz-src SRC=work/src/pyyaml TARGET=yaml:safe_load TIME=20 DEBUG=1
+make fuzz-src SRC=work/src/pyyaml TARGET=yaml:full_load TIME=20 DEBUG=1 
+make fuzz-src SRC=work/src/pyyaml TARGET=yaml:safe_dump TIME=20 DEBUG=1
+
 I still need to do:
 
 - Corpus?

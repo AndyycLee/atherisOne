@@ -1,0 +1,7 @@
+project-includes = ["**/*.py*"]
+project-excludes = [
+    "**/node_modules/**",
+    "**/__pycache__/**",
+    "**/*venv/**/*",
+    "**/.venv/**/*",
+]
